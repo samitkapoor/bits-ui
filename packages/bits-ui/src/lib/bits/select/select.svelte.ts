@@ -124,6 +124,11 @@ abstract class SelectBaseRootState {
 	});
 	contentIsPositioned = $state(false);
 	isUsingKeyboard = false;
+	/**
+	 * The item a press started on, and where. The list can scroll under a still
+	 * pointer before the release, which then lands on a neighbouring item.
+	 */
+	pressedItem: { item: SelectItemState; x: number; y: number } | null = null;
 	isCombobox = false;
 	domContext = new DOMContext(() => null);
 
@@ -142,6 +147,7 @@ abstract class SelectBaseRootState {
 		$effect.pre(() => {
 			if (!this.opts.open.current) {
 				this.setHighlightedNode(null);
+				this.pressedItem = null;
 			}
 		});
 	}
@@ -573,6 +579,8 @@ export class SelectInputState {
 	onkeydown(e: BitsKeyboardEvent) {
 		this.root.isUsingKeyboard = true;
 		if (e.key === kbd.ESCAPE) return;
+		// Home/End move the text cursor in the input, per the WAI-ARIA combobox pattern
+		if (e.key === kbd.HOME || e.key === kbd.END) return;
 
 		// prevent arrow up/down from moving the position of the cursor in the input
 		if (e.key === kbd.ARROW_UP || e.key === kbd.ARROW_DOWN) e.preventDefault();
@@ -719,6 +727,7 @@ export class SelectComboTriggerState {
 		this.onkeydown = this.onkeydown.bind(this);
 		this.onpointerdown = this.onpointerdown.bind(this);
 		this.onpointerup = this.onpointerup.bind(this);
+		this.onclick = this.onclick.bind(this);
 	}
 
 	#focusInputAndToggle() {
@@ -766,6 +775,17 @@ export class SelectComboTriggerState {
 		this.#focusInputAndToggle();
 	}
 
+	/**
+	 * Screen readers can activate the trigger with a `click` that no pointer events
+	 * precede (VoiceOver in Safari). A click that ends a press has a non-zero `detail`
+	 * and was already handled by `onpointerdown` / `onpointerup`.
+	 */
+	onclick(e: BitsMouseEvent) {
+		if (this.root.opts.disabled.current || e.detail !== 0) return;
+		this.#focusInputAndToggle();
+		e.preventDefault();
+	}
+
 	readonly props = $derived.by(
 		() =>
 			({
@@ -777,6 +797,7 @@ export class SelectComboTriggerState {
 				[this.root.getBitsAttr("trigger")]: "",
 				onpointerdown: this.onpointerdown,
 				onpointerup: this.onpointerup,
+				onclick: this.onclick,
 				onkeydown: this.onkeydown,
 				...this.attachment,
 			}) as const
@@ -929,7 +950,7 @@ export class SelectTriggerState {
 		) {
 			e.preventDefault();
 			const shouldReturn = this.#handleKeyboardSelection();
-			if (shouldReturn) return;
+			if (shouldReturn || e.key === kbd.SPACE) return;
 		}
 
 		if (e.key === kbd.ARROW_UP && e.altKey) {
@@ -1150,6 +1171,11 @@ export class SelectContentState {
 		this.root.isUsingKeyboard = false;
 	}
 
+	// every press starts fresh, so a press that ended off an item isn't reused
+	onpointerdowncapture = () => {
+		this.root.pressedItem = null;
+	};
+
 	readonly #styles = $derived.by(() => {
 		return getFloatingContentCSSVars(this.root.isCombobox ? "combobox" : "select");
 	});
@@ -1202,6 +1228,7 @@ export class SelectContentState {
 					...this.#styles,
 				},
 				onpointermove: this.onpointermove,
+				onpointerdowncapture: this.onpointerdowncapture,
 				...this.attachment,
 			}) as const
 	);
@@ -1332,6 +1359,7 @@ export class SelectItemState {
 	onpointerdown(e: BitsPointerEvent) {
 		// prevent focus from leaving the input/select trigger
 		e.preventDefault();
+		this.root.pressedItem = { item: this, x: e.clientX, y: e.clientY };
 	}
 
 	/**
@@ -1341,6 +1369,18 @@ export class SelectItemState {
 	 */
 	onpointerup(e: BitsPointerEvent) {
 		if (e.defaultPrevented || !this.opts.ref.current) return;
+		const press = this.root.pressedItem;
+		this.root.pressedItem = null;
+		// released on another item without the pointer moving: the list moved under it
+		if (
+			press &&
+			press.item !== this &&
+			Math.hypot(e.clientX - press.x, e.clientY - press.y) < 4
+		) {
+			e.preventDefault();
+			press.item.handleSelect();
+			return;
+		}
 		/**
 		 * For one reason or another, when it's a touch pointer and _not_ on IOS,
 		 * we need to listen for the immediate click event to handle the selection,

@@ -7,13 +7,14 @@
 		subRadio?: string;
 		open?: boolean;
 		group?: string[];
+		triggerProps?: Omit<DropdownMenu.TriggerProps, "children" | "child">;
 		contentProps?: Omit<DropdownMenu.ContentProps, "children" | "child">;
+		subContentProps?: Omit<DropdownMenu.SubContentProps, "children" | "child">;
 		portalProps?: Omit<DropdownMenu.PortalProps, "children" | "child">;
 		subTriggerProps?: Omit<DropdownMenu.SubTriggerProps, "children" | "child">;
 		checkboxGroupProps?: Omit<DropdownMenu.CheckboxGroupProps, "children" | "child" | "value">;
 		openFocusOverride?: boolean;
 		subItemProps?: Omit<DropdownMenu.ItemProps, "children" | "child">;
-		subContentProps?: Omit<DropdownMenu.SubContentProps, "children" | "child">;
 	};
 </script>
 
@@ -25,13 +26,14 @@
 		group = [],
 		subRadio = "",
 		open = false,
+		triggerProps = {},
 		contentProps = {},
+		subContentProps = {},
 		portalProps = {},
 		subTriggerProps = {},
 		checkboxGroupProps = {},
 		openFocusOverride = false,
 		subItemProps = {},
-		subContentProps = {},
 		...restProps
 	}: DropdownMenuTestProps = $props();
 </script>
@@ -46,6 +48,7 @@
 				class="h-[500px] w-[500px]"
 				aria-expanded={undefined}
 				aria-controls={undefined}
+				{...triggerProps}
 			>
 				open
 			</DropdownMenu.Trigger>
@@ -73,7 +76,7 @@
 							<span>subtrigger</span>
 						</DropdownMenu.SubTrigger>
 						<DropdownMenu.Portal>
-							<DropdownMenu.SubContent data-testid="sub-content" {...subContentProps}>
+							<DropdownMenu.SubContent {...subContentProps} data-testid="sub-content">
 								<DropdownMenu.Item
 									{...subItemProps}
 									data-testid="sub-item"

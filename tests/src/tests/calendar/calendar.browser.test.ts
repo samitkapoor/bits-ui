@@ -277,6 +277,36 @@ describe("type='single'", () => {
 			await expect.element(tuesday).toHaveFocus();
 		});
 
+		it("should preserve the weekday when moving vertically across the month edge past disabled dates", async () => {
+			setup({
+				value: new CalendarDate(2026, 10, 27),
+				isDateDisabled: (date) => date.toDate("UTC").getUTCDay() === 1,
+			});
+			const heading = page.getByTestId("heading");
+			await focusAndExpectToHaveFocus(page.getByTestId("date-10-27"));
+			await userEvent.keyboard(kbd.ARROW_DOWN);
+			await expect.element(page.getByTestId("date-11-3")).toHaveFocus();
+			await expect.element(heading).toHaveTextContent("November 2026");
+			await userEvent.keyboard(kbd.ARROW_UP);
+			await expect.element(page.getByTestId("date-10-27")).toHaveFocus();
+			await expect.element(heading).toHaveTextContent("October 2026");
+
+			await focusAndExpectToHaveFocus(page.getByTestId("date-10-31"));
+			await userEvent.keyboard(kbd.ARROW_DOWN);
+			await expect.element(page.getByTestId("date-11-7")).toHaveFocus();
+		});
+
+		it("should skip a disabled target day across the month edge to the same weekday", async () => {
+			setup({
+				value: new CalendarDate(2026, 10, 27),
+				isDateDisabled: (date) =>
+					date.toDate("UTC").getUTCDay() === 1 || date.toString() === "2026-11-03",
+			});
+			await focusAndExpectToHaveFocus(page.getByTestId("date-10-27"));
+			await userEvent.keyboard(kbd.ARROW_DOWN);
+			await expect.element(page.getByTestId("date-11-10")).toHaveFocus();
+		});
+
 		it("should not navigate before `minValue` (with keyboard)", async () => {
 			setup({
 				value: calendarDate,
@@ -315,6 +345,27 @@ describe("type='single'", () => {
 			await addMonthBtn.click();
 			await addMonthBtn.click();
 			await expect.element(heading).toHaveTextContent("May 1981");
+		});
+
+		it("should keep a day tabbable when the placeholder becomes disabled after mount", async () => {
+			const t = setup({ placeholder: calendarDate });
+			await t.rerender({ isDateDisabled: (date) => date.day === calendarDate.day });
+			await expect.element(page.getByTestId("date-1-20")).not.toHaveAttribute("tabindex");
+			const tabbable = t.calendar.element().querySelectorAll('[data-bits-day][tabindex="0"]');
+			expect(tabbable).toHaveLength(1);
+			expect(tabbable[0]).toHaveAttribute("data-value", "1980-01-01");
+		});
+
+		it("should keep a day tabbable when Next lands the placeholder on a disabled day", async () => {
+			const t = setup({
+				placeholder: calendarDate,
+				isDateDisabled: (date) => date.month === 2 && date.day === calendarDate.day,
+			});
+			await t.nextButton.click();
+			await expect.element(page.getByTestId("heading")).toHaveTextContent("February 1980");
+			const tabbable = t.calendar.element().querySelectorAll('[data-bits-day][tabindex="0"]');
+			expect(tabbable).toHaveLength(1);
+			expect(tabbable[0]).toHaveAttribute("data-value", "1980-02-01");
 		});
 
 		it("should set default placeholder greater than `minValue`", async () => {

@@ -1,5 +1,39 @@
 # bits-ui
 
+## 2.20.2
+
+### Patch Changes
+
+- fix(Combobox): let `Home`/`End` move the text cursor in `Combobox.Input` instead of highlighting the first/last item ([#2241](https://github.com/huntabyte/bits-ui/pull/2241))
+
+- fix(Select): space to toggle items ([#2073](https://github.com/huntabyte/bits-ui/pull/2073))
+
+- Fix Date Field rejecting and rendering day 31 before a month is selected ([#2187](https://github.com/huntabyte/bits-ui/pull/2187))
+
+- fix(Floating): apply the content's z-index to the floating wrapper when force-mounted content opens ([#1961](https://github.com/huntabyte/bits-ui/pull/1961))
+
+- fix(Select, Combobox): select the pressed item when the list scrolls under a still pointer before release ([#2232](https://github.com/huntabyte/bits-ui/pull/2232))
+
+- fix(Combobox): open the trigger on a click that no pointer press precedes (`detail: 0`), such as `element.click()` or a VoiceOver activation in Safari ([#2186](https://github.com/huntabyte/bits-ui/pull/2186))
+
+- fix: silence `state_referenced_locally` compiler warnings emitted in consumer builds by wrapping intentional initialization-time prop reads in `untrack` ([#2179](https://github.com/huntabyte/bits-ui/pull/2179))
+
+## 2.20.1
+
+### Patch Changes
+
+- fix(Calendar, RangeCalendar): keep a day tabbable when the placeholder is disabled after mount or after Prev/Next. Also applies to `DatePicker` and `DateRangePicker`. ([#2235](https://github.com/huntabyte/bits-ui/pull/2235))
+
+- fix(Command): avoid remounting all items on the first search character when `shouldFilter` is `false` ([#2240](https://github.com/huntabyte/bits-ui/pull/2240))
+
+- fix(Floating): avoid an invalid `z-index: undefined` wrapper style that logs warnings in Firefox ([#2076](https://github.com/huntabyte/bits-ui/pull/2076))
+
+- fix(DropdownMenu, ContextMenu, Menubar): select the pressed item when the content scrolls under a still pointer before release (sibling of #2231) ([#2237](https://github.com/huntabyte/bits-ui/pull/2237))
+
+- chore: update `@floating-ui/core`, `@floating-ui/dom`, `esm-env`, and `tabbable` to their latest minor versions ([#2234](https://github.com/huntabyte/bits-ui/pull/2234))
+
+- fix(RangeCalendar): preserve the weekday when moving focus with Arrow Up/Down past disabled dates (#2224) ([#2236](https://github.com/huntabyte/bits-ui/pull/2236))
+
 ## 2.20.0
 
 ### Minor Changes
